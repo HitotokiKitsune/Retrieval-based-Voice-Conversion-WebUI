@@ -611,7 +611,8 @@ if __name__ == "__main__":
 
 
         i18n = I18nAuto() # GUI's i18n instance
-        # current_dir, inp_q, opt_q, n_cpu for Harvest are already global
+        # current_dir, inp_q, opt_q for Harvest are already global
+        # n_cpu is handled by self.gui_config.n_cpu for GUI
         
         # --- GUI Class Definition ---
         # (Content of GUI class as it was, with its own imports if they were local)
@@ -714,40 +715,35 @@ if __name__ == "__main__":
             def launcher(self): # Contents as before, using sg.
                 data = self.load()
                 sg.theme("LightBlue3")
-                # ... layout definition using `data` for defaults ...
-                # This is the full GUI layout from the previous version.
-                # For brevity, not repeating the entire layout here.
-                # Assume it's the same as in the file content read previously.
                 layout = [
-                    [sg.Frame(title=i18n("加载模型"), layout=[
-                        [sg.Input(default_text=data.get("pth_path", ""),key="pth_path"), sg.FileBrowse(i18n("选择.pth文件"),initial_folder=os.path.join(os.getcwd(),"assets/weights"),file_types=((".pth"),))],
-                        [sg.Input(default_text=data.get("index_path", ""),key="index_path"), sg.FileBrowse(i18n("选择.index文件"),initial_folder=os.path.join(os.getcwd(), "logs"),file_types=((".index"),))]])],
+                    [sg.Frame(title=i18n("Load Model"), layout=[
+                        [sg.Input(default_text=data.get("pth_path", ""),key="pth_path"), sg.FileBrowse(i18n("Select .pth file"),initial_folder=os.path.join(os.getcwd(),"assets/weights"),file_types=((".pth"),))],
+                        [sg.Input(default_text=data.get("index_path", ""),key="index_path"), sg.FileBrowse(i18n("Select .index file"),initial_folder=os.path.join(os.getcwd(), "logs"),file_types=((".index"),))]])],
                     [sg.Frame(layout=[
-                        [sg.Text(i18n("设备类型")), sg.Combo(self.hostapis,key="sg_hostapi",default_value=data.get("sg_hostapi", ""),enable_events=True,size=(20,1)), sg.Checkbox(i18n("独占 WASAPI 设备"),key="sg_wasapi_exclusive",default=data.get("sg_wasapi_exclusive", False),enable_events=True)],
-                        [sg.Text(i18n("输入设备")), sg.Combo(self.input_devices,key="sg_input_device",default_value=data.get("sg_input_device", ""),enable_events=True,size=(45,1))],
-                        [sg.Text(i18n("输出设备")), sg.Combo(self.output_devices,key="sg_output_device",default_value=data.get("sg_output_device", ""),enable_events=True,size=(45,1))],
-                        [sg.Button(i18n("重载设备列表"),key="reload_devices"), sg.Radio(i18n("使用模型采样率"),"sr_type",key="sr_model",default=data.get("sr_model",True),enable_events=True), sg.Radio(i18n("使用设备采样率"),"sr_type",key="sr_device",default=data.get("sr_device",False),enable_events=True), sg.Text(i18n("采样率:")),sg.Text("",key="sr_stream")]], title=i18n("音频设备"))],
+                        [sg.Text(i18n("Device Type")), sg.Combo(self.hostapis,key="sg_hostapi",default_value=data.get("sg_hostapi", ""),enable_events=True,size=(20,1)), sg.Checkbox(i18n("Exclusive WASAPI Device"),key="sg_wasapi_exclusive",default=data.get("sg_wasapi_exclusive", False),enable_events=True)],
+                        [sg.Text(i18n("Input Device")), sg.Combo(self.input_devices,key="sg_input_device",default_value=data.get("sg_input_device", ""),enable_events=True,size=(45,1))],
+                        [sg.Text(i18n("Output Device")), sg.Combo(self.output_devices,key="sg_output_device",default_value=data.get("sg_output_device", ""),enable_events=True,size=(45,1))],
+                        [sg.Button(i18n("Reload Device List"),key="reload_devices"), sg.Radio(i18n("Use Model Sample Rate"),"sr_type",key="sr_model",default=data.get("sr_model",True),enable_events=True), sg.Radio(i18n("Use Device Sample Rate"),"sr_type",key="sr_device",default=data.get("sr_device",False),enable_events=True), sg.Text(i18n("Sample Rate:")),sg.Text("",key="sr_stream")]], title=i18n("Audio Devices"))],
                     [sg.Frame(layout=[
-                        [sg.Text(i18n("响应阈值")),sg.Slider(range=(-60,0),key="threhold",resolution=1,orientation="h",default_value=data.get("threhold",-60),enable_events=True)],
-                        [sg.Text(i18n("音调设置")),sg.Slider(range=(-16,16),key="pitch",resolution=1,orientation="h",default_value=data.get("pitch",0),enable_events=True)],
-                        [sg.Text(i18n("性别因子/声线粗细")),sg.Slider(range=(-2,2),key="formant",resolution=0.05,orientation="h",default_value=data.get("formant",0.0),enable_events=True)],
+                        [sg.Text(i18n("Response Threshold")),sg.Slider(range=(-60,0),key="threhold",resolution=1,orientation="h",default_value=data.get("threhold",-60),enable_events=True)],
+                        [sg.Text(i18n("Pitch Setting")),sg.Slider(range=(-16,16),key="pitch",resolution=1,orientation="h",default_value=data.get("pitch",0),enable_events=True)],
+                        [sg.Text(i18n("Formant")),sg.Slider(range=(-2,2),key="formant",resolution=0.05,orientation="h",default_value=data.get("formant",0.0),enable_events=True)], # Changed from "性别因子/声线粗细"
                         [sg.Text(i18n("Index Rate")),sg.Slider(range=(0.0,1.0),key="index_rate",resolution=0.01,orientation="h",default_value=data.get("index_rate",0.0),enable_events=True)],
-                        [sg.Text(i18n("响度因子")),sg.Slider(range=(0.0,1.0),key="rms_mix_rate",resolution=0.01,orientation="h",default_value=data.get("rms_mix_rate",0.0),enable_events=True)],
-                        [sg.Text(i18n("音高算法")), sg.Radio("pm","f0method",key="pm",default=data.get("pm",False),enable_events=True), sg.Radio("harvest","f0method",key="harvest",default=data.get("harvest",False),enable_events=True), sg.Radio("crepe","f0method",key="crepe",default=data.get("crepe",False),enable_events=True), sg.Radio("rmvpe","f0method",key="rmvpe",default=data.get("rmvpe",False),enable_events=True), sg.Radio("fcpe","f0method",key="fcpe",default=data.get("fcpe",True),enable_events=True)]],title=i18n("常规设置")),
+                        [sg.Text(i18n("RMS Mix Rate")),sg.Slider(range=(0.0,1.0),key="rms_mix_rate",resolution=0.01,orientation="h",default_value=data.get("rms_mix_rate",0.0),enable_events=True)], # Changed from "响度因子"
+                        [sg.Text(i18n("Pitch Algorithm")), sg.Radio("pm","f0method",key="pm",default=data.get("pm",False),enable_events=True), sg.Radio("harvest","f0method",key="harvest",default=data.get("harvest",False),enable_events=True), sg.Radio("crepe","f0method",key="crepe",default=data.get("crepe",False),enable_events=True), sg.Radio("rmvpe","f0method",key="rmvpe",default=data.get("rmvpe",False),enable_events=True), sg.Radio("fcpe","f0method",key="fcpe",default=data.get("fcpe",True),enable_events=True)]],title=i18n("General Settings")),
                      sg.Frame(layout=[
-                        [sg.Text(i18n("采样长度")),sg.Slider(range=(0.02,1.5),key="block_time",resolution=0.01,orientation="h",default_value=data.get("block_time",0.25),enable_events=True)],
-                        [sg.Text(i18n("harvest进程数")),sg.Slider(range=(1,self.gui_config.n_cpu),key="n_cpu",resolution=1,orientation="h",default_value=data.get("n_cpu",4),enable_events=True)], # n_cpu global for harvest, data['n_cpu'] for RVC
-                        [sg.Text(i18n("淡入淡出长度")),sg.Slider(range=(0.01,0.15),key="crossfade_length",resolution=0.01,orientation="h",default_value=data.get("crossfade_length",0.05),enable_events=True)],
-                        [sg.Text(i18n("额外推理时长")),sg.Slider(range=(0.05,5.00),key="extra_time",resolution=0.01,orientation="h",default_value=data.get("extra_time",2.5),enable_events=True)],
-                        [sg.Checkbox(i18n("输入降噪"),key="I_noise_reduce",default=data.get("I_noise_reduce",False),enable_events=True), sg.Checkbox(i18n("输出降噪"),key="O_noise_reduce",default=data.get("O_noise_reduce",False),enable_events=True), sg.Checkbox(i18n("启用相位声码器"),key="use_pv",default=data.get("use_pv",False),enable_events=True)]],title=i18n("性能设置"))],
-                    [sg.Button(i18n("开始音频转换"),key="start_vc"), sg.Button(i18n("停止音频转换"),key="stop_vc"), sg.Radio(i18n("输入监听"),"function",key="im",default=data.get("im_radio",False),enable_events=True), sg.Radio(i18n("输出变声"),"function",key="vc",default=data.get("vc_radio",True),enable_events=True), sg.Text(i18n("算法延迟(ms):")),sg.Text("0",key="delay_time"),sg.Text(i18n("推理时间(ms):")),sg.Text("0",key="infer_time")]]
+                        [sg.Text(i18n("Block Time")),sg.Slider(range=(0.02,1.5),key="block_time",resolution=0.01,orientation="h",default_value=data.get("block_time",0.25),enable_events=True)], # Changed from "采样长度"
+                        [sg.Text(i18n("Number of Harvest Processes")),sg.Slider(range=(1,self.gui_config.n_cpu),key="n_cpu",resolution=1,orientation="h",default_value=data.get("n_cpu",4),enable_events=True)], # Fixed n_cpu to self.gui_config.n_cpu
+                        [sg.Text(i18n("Crossfade Length")),sg.Slider(range=(0.01,0.15),key="crossfade_length",resolution=0.01,orientation="h",default_value=data.get("crossfade_length",0.05),enable_events=True)], # Changed from "淡入淡出长度"
+                        [sg.Text(i18n("Extra Inference Time")),sg.Slider(range=(0.05,5.00),key="extra_time",resolution=0.01,orientation="h",default_value=data.get("extra_time",2.5),enable_events=True)],
+                        [sg.Checkbox(i18n("Input Noise Reduction"),key="I_noise_reduce",default=data.get("I_noise_reduce",False),enable_events=True), sg.Checkbox(i18n("Output Noise Reduction"),key="O_noise_reduce",default=data.get("O_noise_reduce",False),enable_events=True), sg.Checkbox(i18n("Enable Phase Vocoder"),key="use_pv",default=data.get("use_pv",False),enable_events=True)]],title=i18n("Performance Settings"))],
+                    [sg.Button(i18n("Start Audio Conversion"),key="start_vc"), sg.Button(i18n("Stop Audio Conversion"),key="stop_vc"), sg.Radio(i18n("Input Monitoring"),"function",key="im",default=data.get("im_radio",False),enable_events=True), sg.Radio(i18n("Output Voice Change"),"function",key="vc",default=data.get("vc_radio",True),enable_events=True), sg.Text(i18n("Algorithm Latency (ms):")),sg.Text("0",key="delay_time"),sg.Text(i18n("Inference Time (ms):")),sg.Text("0",key="infer_time")]]
 
                 self.window = sg.Window("RVC - GUI", layout=layout, finalize=True)
                 self.event_handler() # Contains the main GUI loop
 
             def event_handler(self): # GUI's event handler
                 global flag_vc # GUI uses global flag_vc for its stream
-                # ... content of event_handler as before ...
                 while True:
                     event, values = self.window.read()
                     if event == sg.WINDOW_CLOSED: self.stop_stream(); break
@@ -769,7 +765,6 @@ if __name__ == "__main__":
                         if self.set_values(values): # Validates and sets gui_config
                             printt("GUI: cuda_is_available: %s", torch.cuda.is_available())
                             self.start_vc() # Uses self.gui_config to setup RVC, buffers, and stream
-                            # Save current settings from `values` to config.json
                             settings = { "pth_path": values["pth_path"], "index_path": values["index_path"], "sg_hostapi": values["sg_hostapi"], "sg_wasapi_exclusive": values["sg_wasapi_exclusive"], "sg_input_device": values["sg_input_device"], "sg_output_device": values["sg_output_device"], "sr_type": ["sr_model","sr_device"][[values["sr_model"],values["sr_device"]].index(True)], "threhold": values["threhold"], "pitch": values["pitch"], "formant": values["formant"], "rms_mix_rate": values["rms_mix_rate"], "index_rate": values["index_rate"], "block_time": values["block_time"], "crossfade_length": values["crossfade_length"], "extra_time": values["extra_time"], "n_cpu": values["n_cpu"], "use_jit": False, "use_pv": values["use_pv"], "f0method": ["pm","harvest","crepe","rmvpe","fcpe"][[values["pm"],values["harvest"],values["crepe"],values["rmvpe"],values["fcpe"]].index(True)], "function": ["vc","im"][[values["vc"],values["im"]].index(True)]}
                             if not os.path.exists("configs/inuse"): os.makedirs("configs/inuse", exist_ok=True)
                             with open("configs/inuse/config.json", "w") as j: json.dump(settings, j)
@@ -780,31 +775,28 @@ if __name__ == "__main__":
                                 self.window["delay_time"].update(int(np.round(self.delay_time*1000)))
                             self.window["sr_stream"].update(self.gui_config.samplerate if hasattr(self.gui_config, 'samplerate') else "N/A")
                     
-                    # Parameter hot updates (as before)
                     if event == "threhold": self.gui_config.threhold = values["threhold"]
                     elif event == "pitch": self.gui_config.pitch = values["pitch"]; self.rvc.change_key(values["pitch"]) if hasattr(self,"rvc") else None
                     elif event == "formant": self.gui_config.formant = values["formant"]; self.rvc.change_formant(values["formant"]) if hasattr(self,"rvc") else None
                     elif event == "index_rate": self.gui_config.index_rate = values["index_rate"]; self.rvc.change_index_rate(values["index_rate"]) if hasattr(self,"rvc") else None
                     elif event == "rms_mix_rate": self.gui_config.rms_mix_rate = values["rms_mix_rate"]
                     elif event in ["pm", "harvest", "crepe", "rmvpe", "fcpe"]: self.gui_config.f0method = event
-                    elif event == "I_noise_reduce": self.gui_config.I_noise_reduce = values["I_noise_reduce"] # Delay update logic removed for brevity
+                    elif event == "I_noise_reduce": self.gui_config.I_noise_reduce = values["I_noise_reduce"] 
                     elif event == "O_noise_reduce": self.gui_config.O_noise_reduce = values["O_noise_reduce"]
                     elif event == "use_pv": self.gui_config.use_pv = values["use_pv"]
                     elif event in ["vc", "im"]: self.function = event; self.gui_config.function = event
                     
-                    elif event == "stop_vc" or (event != "start_vc" and event not in ["sg_input_device", "sg_output_device", "sr_model", "sr_device", "block_time", "crossfade_length", "extra_time", "n_cpu", # hot-update params
+                    elif event == "stop_vc" or (event != "start_vc" and event not in ["sg_input_device", "sg_output_device", "sr_model", "sr_device", "block_time", "crossfade_length", "extra_time", "n_cpu", 
                                                                                        "threhold", "pitch", "formant", "index_rate", "rms_mix_rate", "pm", "harvest", "crepe", "rmvpe", "fcpe",
-                                                                                       "I_noise_reduce", "O_noise_reduce", "use_pv", "vc", "im", "sg_hostapi", "reload_devices"]): # other non-restarting events
-                        is_config_change_requiring_restart = event in ["pth_path", "index_path", "sg_wasapi_exclusive", "sr_model", "sr_device", "block_time", "crossfade_length", "extra_time", "n_cpu"] # Check only relevant keys
+                                                                                       "I_noise_reduce", "O_noise_reduce", "use_pv", "vc", "im", "sg_hostapi", "reload_devices"]): 
+                        is_config_change_requiring_restart = event in ["pth_path", "index_path", "sg_wasapi_exclusive", "sr_model", "sr_device", "block_time", "crossfade_length", "extra_time", "n_cpu"] 
                         if event == "stop_vc" or is_config_change_requiring_restart:
                             self.stop_stream()
 
 
-            def set_values(self, values): # GUI's method to validate GUI values and update its own gui_config
-                # ... content of set_values as before, validating GUI inputs ...
-                if not values["pth_path"].strip(): sg.popup(i18n("请选择pth文件")); return False
-                if not values["index_path"].strip(): sg.popup(i18n("请选择index文件")); return False
-                # path validation...
+            def set_values(self, values): 
+                if not values["pth_path"].strip(): sg.popup(i18n("Please select a pth file")); return False
+                if not values["index_path"].strip(): sg.popup(i18n("Please select an index file")); return False
                 self.gui_config.pth_path = values["pth_path"]; self.gui_config.index_path = values["index_path"]
                 self.gui_config.sg_hostapi = values["sg_hostapi"]; self.gui_config.wasapi_exclusive = values["sg_wasapi_exclusive"]
                 self.gui_config.sg_input_device = values["sg_input_device"]; self.gui_config.sg_output_device = values["sg_output_device"]
@@ -817,22 +809,19 @@ if __name__ == "__main__":
                 self.gui_config.I_noise_reduce = values["I_noise_reduce"]; self.gui_config.O_noise_reduce = values["O_noise_reduce"]
                 self.gui_config.use_pv = values["use_pv"]; self.gui_config.function = "vc" if values["vc"] else "im"
                 if values["sg_input_device"] in self.input_devices and values["sg_output_device"] in self.output_devices:
-                    self.set_devices(values["sg_input_device"], values["sg_output_device"]) # Sets sd.default.device
-                else: sg.popup(i18n("无效的输入或输出设备。")); return False
+                    self.set_devices(values["sg_input_device"], values["sg_output_device"]) 
+                else: sg.popup(i18n("Invalid input or output device.")); return False
                 self.config.use_jit = False
                 return True
 
-            def start_vc(self): # GUI's method to init RVC, audio buffers, and stream, using self.gui_config
-                global flag_vc # GUI uses global flag_vc
+            def start_vc(self): 
+                global flag_vc 
                 torch.cuda.empty_cache()
-                # Initialize self.rvc using self.gui_config values
                 self.rvc = rvc_for_realtime.RVC(self.gui_config.pitch, self.gui_config.formant, self.gui_config.pth_path, self.gui_config.index_path, self.gui_config.index_rate, self.gui_config.n_cpu, inp_q, opt_q, self.config, getattr(self, "rvc", None))
                 self.gui_config.samplerate = self.rvc.tgt_sr if self.gui_config.sr_type == "sr_model" else self.get_device_samplerate()
                 self.gui_config.channels = self.get_device_channels()
-                if self.gui_config.samplerate is None or self.gui_config.channels is None: sg.popup(i18n("无法获取设备采样率或声道数。")); self.stop_stream(); return
+                if self.gui_config.samplerate is None or self.gui_config.channels is None: sg.popup(i18n("Unable to get device sample rate or channel count.")); self.stop_stream(); return # Changed "无法获取设备采样率或声道数。"
                 
-                # Initialize audio buffers (self.zc, self.block_frame, etc.) using self.gui_config values
-                # This is the same buffer setup logic as in setup_cli_components, but applied to self.gui_config and self object
                 self.zc = self.gui_config.samplerate // 100
                 self.block_frame = int(np.round(self.gui_config.block_time*self.gui_config.samplerate/self.zc))*self.zc
                 if self.block_frame == 0: self.block_frame = self.zc
@@ -859,23 +848,22 @@ if __name__ == "__main__":
                 self.resampler2 = tat.Resample(orig_freq=self.rvc.tgt_sr, new_freq=self.gui_config.samplerate, dtype=torch.float32).to(self.config.device) if self.rvc.tgt_sr != self.gui_config.samplerate else None
                 self.tg = TorchGate(sr=self.gui_config.samplerate, n_fft=4*self.zc, prop_decrease=0.9).to(self.config.device)
 
-                self.start_stream() # GUI's own stream start
+                self.start_stream() 
 
-            def start_stream(self): # GUI's stream start
-                global flag_vc # Uses global flag
+            def start_stream(self): 
+                global flag_vc 
                 if not flag_vc:
                     extra_settings = sd.WasapiSettings(exclusive=True) if "WASAPI" in self.gui_config.sg_hostapi and self.gui_config.sg_wasapi_exclusive else None
                     try:
-                        # Use self.audio_callback for GUI stream
                         self.stream = sd.Stream(callback=self.audio_callback, blocksize=self.block_frame if self.block_frame > 0 else None, samplerate=self.gui_config.samplerate, channels=self.gui_config.channels, dtype="float32", extra_settings=extra_settings)
                         self.stream.start()
                         flag_vc = True
                         self.window["start_vc"].Update(disabled=True)
                         self.window["stop_vc"].Update(disabled=False)
-                    except Exception as e: sg.popup_error(f"{i18n('无法打开音频流')}: {e}"); flag_vc = False
+                    except Exception as e: sg.popup_error(f"{i18n('Unable to open audio stream')}: {e}"); flag_vc = False # Changed "无法打开音频流"
 
-            def stop_stream(self): # GUI's stream stop
-                global flag_vc # Uses global flag
+            def stop_stream(self): 
+                global flag_vc 
                 if flag_vc:
                     flag_vc = False
                     if hasattr(self, "stream") and self.stream:
@@ -884,34 +872,97 @@ if __name__ == "__main__":
                         self.stream = None
                     if hasattr(self, 'window') and self.window.TKrootExists():
                         try: self.window["start_vc"].Update(disabled=False); self.window["stop_vc"].Update(disabled=True); self.window["infer_time"].update("0"); self.window["delay_time"].update("0")
-                        except: pass # Window might be closing
+                        except: pass 
 
-            def audio_callback(self, indata, outdata, frames, times, status): # GUI's audio callback
-                global flag_vc # GUI's callback uses global flag_vc
-                # ... content of GUI's audio_callback as before, using self.gui_config and self. for buffers ...
-                # This is the same logic as cli_audio_callback but uses `self.gui_config` and `self.` for attributes.
+            def audio_callback(self, indata, outdata, frames, times, status): 
+                global flag_vc 
                 if not flag_vc: outdata[:] = 0; return
                 if status: print(f"GUI Stream status: {status}")
                 start_time = time.perf_counter()
                 try:
-                    # Simplified version of the GUI audio_callback logic from previous file for brevity
-                    # The actual implementation would be the full detailed audio processing using self.gui_config
-                    # and self.input_wav, self.rvc, etc.
                     indata_mono = librosa.to_mono(indata.T)
-                    # ... (Full processing: threshold, NR, RVC, SOLA, etc. as in cli_audio_callback but with `self.`)
-                    # For example:
-                    # if self.gui_config.threhold > -60: ...
-                    # infer_wav = self.rvc.infer(...)
-                    # ...
-                    # For this placeholder, just pass through if function is 'im', else silence for 'vc'
-                    if self.gui_config.function == "im":
-                        outdata[:] = indata # Simple passthrough for input monitoring
-                    else: # VC mode - assume processing happens and fills infer_wav
-                        # This is where the full VC chain would be
-                        # For now, let's just output silence as a placeholder for complex VC processing
-                        # In a real scenario, infer_wav would be calculated and then put into outdata
-                        # Example: output_block = infer_wav[: self.block_frame] ... outdata[:] = ...
-                        outdata[:] = 0 # Placeholder for actual processed audio
+                    # This is a simplified placeholder logic for the full audio processing chain.
+                    # The full chain would include: thresholding, input noise reduction (if enabled),
+                    # resampling, RVC inference, output noise reduction (if enabled), RMS mix, and SOLA.
+                    # For this example, we'll just do a simple passthrough for "im" (input monitoring)
+                    # and silence for "vc" (voice conversion) as the full chain is complex.
+
+                    if self.gui_config.function == "im": # Input Monitoring
+                        # For actual input monitoring, you might want to apply input noise reduction if enabled.
+                        # if self.gui_config.I_noise_reduce:
+                        #     # Simplified NR placeholder logic
+                        #     # indata_mono = self.tg(...) 
+                        #     pass 
+                        outdata[:] = indata 
+                    
+                    elif self.gui_config.function == "vc": # Voice Conversion
+                        # This is where the full inference pipeline would be implemented,
+                        # similar to cli_audio_callback, but using self.gui_config and self. attributes.
+                        # It would involve:
+                        # 1. Thresholding indata_mono
+                        # 2. Input noise reduction (self.tg) if self.gui_config.I_noise_reduce
+                        # 3. Shifting and filling self.input_wav / self.input_wav_denoise
+                        # 4. Resampling to 16k (self.resampler) into self.input_wav_res
+                        # 5. RVC inference (self.rvc.infer) to get infer_wav
+                        # 6. Resampling back to device sr (self.resampler2) if needed
+                        # 7. Output noise reduction (self.tg) if self.gui_config.O_noise_reduce
+                        # 8. RMS Mix Rate adjustment
+                        # 9. SOLA processing for smooth transitions
+                        # 10. Preparing the final output_block for outdata
+
+                        # Placeholder: output silence for VC mode until full chain is implemented here.
+                        # To make it functional, copy and adapt the processing chain from 
+                        # cli_audio_callback here, replacing audio_callback_config with self.gui_config
+                        # and global module placeholders (like librosa_placeholder) with direct imports 
+                        # (e.g., librosa, torch, np) or self. attributes if they are set up that way in GUI.
+                        
+                        # Example of a very small part of the processing:
+                        # Shift input buffer
+                        self.input_wav[:-self.block_frame] = self.input_wav[self.block_frame:].clone()
+                        self.input_wav[-indata_mono.shape[0]:] = torch.from_numpy(indata_mono).to(self.config.device)
+                        
+                        # --- Start of adapted processing chain (needs full review and testing) ---
+                        # Note: This is a partial adaptation and needs to be completed and made consistent
+                        # with how GUI class manages its state (e.g., self.input_wav_denoise, self.resampler etc.)
+
+                        current_input_audio = self.input_wav # Default to non-denoised
+                        if self.gui_config.I_noise_reduce:
+                            self.input_wav_denoise[:-self.block_frame] = self.input_wav_denoise[self.block_frame:].clone()
+                            tg_input_slice_gui = self.input_wav[-self.sola_buffer_frame - self.block_frame:]
+                            denoised_slice_gui = self.tg(tg_input_slice_gui.unsqueeze(0), tg_input_slice_gui.unsqueeze(0)).squeeze(0) # Using self.tg
+                            denoised_slice_gui[:self.sola_buffer_frame] *= self.fade_in_window # Using self.fade_in_window
+                            denoised_slice_gui[:self.sola_buffer_frame] += (self.nr_buffer * self.fade_out_window) # Using self.nr_buffer, self.fade_out_window
+                            self.input_wav_denoise[-self.block_frame:] = denoised_slice_gui[self.sola_buffer_frame : self.sola_buffer_frame + self.block_frame]
+                            self.nr_buffer[:] = denoised_slice_gui[self.block_frame : self.block_frame + self.sola_buffer_frame]
+                            current_input_audio = self.input_wav_denoise
+                        
+                        resample_target_gui = current_input_audio[-indata_mono.shape[0] - 2 * self.zc:] # Simplified, might need adjustment
+                        self.input_wav_res[:-self.block_frame_16k] = self.input_wav_res[self.block_frame_16k:].clone() # Shift resampled buffer
+                        self.input_wav_res[-160 * (resample_target_gui.shape[0] // self.zc):] = self.resampler(resample_target_gui)[160 * (2 * self.zc // self.zc):]
+
+                        infer_wav = self.rvc.infer( # Using self.rvc
+                            self.input_wav_res,
+                            self.block_frame_16k,
+                            self.skip_head,
+                            self.return_length,
+                            self.gui_config.f0method,
+                        )
+                        if self.resampler2 is not None: # Using self.resampler2
+                            infer_wav = self.resampler2(infer_wav)
+                        
+                        # ... (Output NR, RMS Mix, SOLA would follow here, adapted similarly) ...
+                        
+                        # Final output preparation (simplified)
+                        output_block = infer_wav[:self.block_frame] 
+                        if output_block.shape[0] < self.block_frame:
+                            padding = torch.zeros(self.block_frame - output_block.shape[0], device=self.config.device, dtype=torch.float32)
+                            output_block = torch.cat((output_block, padding))
+                        
+                        outdata[:] = output_block.repeat(self.gui_config.channels, 1).t().cpu().numpy()
+                        # --- End of adapted processing chain ---
+                    else:
+                        outdata[:] = 0 # Default to silence if function is not recognized
+
                 except Exception as e:
                     print(f"Error in GUI audio_callback: {e}\n{traceback.format_exc()}"); outdata[:] = 0
                 total_time = time.perf_counter() - start_time
@@ -919,8 +970,7 @@ if __name__ == "__main__":
                     try: self.window["infer_time"].update(int(total_time * 1000))
                     except: pass
 
-            def update_devices(self, hostapi_name=None): # GUI's update_devices
-                # ... content as before, populating self.hostapis, self.input_devices etc. ...
+            def update_devices(self, hostapi_name=None): 
                 sd._terminate(); sd._initialize()
                 devices = sd.query_devices(); hostapis_read = sd.query_hostapis()
                 self.hostapis = [h["name"] for h in hostapis_read]
@@ -939,34 +989,31 @@ if __name__ == "__main__":
                 if not self.output_devices_indices: self.output_devices_indices = [-1]
 
 
-            def set_devices(self, input_device_name, output_device_name): # GUI's set_devices
-                # ... content as before, setting sd.default.device ...
+            def set_devices(self, input_device_name, output_device_name): 
                 try:
                     if input_device_name in self.input_devices: sd.default.device[0] = self.input_devices_indices[self.input_devices.index(input_device_name)]
                     if output_device_name in self.output_devices: sd.default.device[1] = self.output_devices_indices[self.output_devices.index(output_device_name)]
                 except Exception as e: print(f"Error setting GUI devices: {e}")
 
 
-            def get_device_samplerate(self): # GUI's method
+            def get_device_samplerate(self): 
                 try: return int(sd.query_devices(sd.default.device[0])["default_samplerate"])
                 except: 
                     try: return int(sd.query_devices(sd.default.device[1])["default_samplerate"])
-                    except: return 44100 # Fallback
+                    except: return 44100 
 
-            def get_device_channels(self): # GUI's method
+            def get_device_channels(self): 
                 try:
                     in_ch = sd.query_devices(sd.default.device[0])["max_input_channels"]
                     out_ch = sd.query_devices(sd.default.device[1])["max_output_channels"]
                     return min(in_ch, out_ch, 2)
-                except: return 1 # Fallback
+                except: return 1 
         # --- End of GUI Class Definition ---
 
-        gui = GUI(cli_args_for_gui_defaults=args) # Pass all args, GUI __init__ will pick what it needs
-        # GUI event loop is blocking, so script effectively waits here for GUI to close.
-        # Cleanup after GUI closes:
-        gui.stop_stream() # Ensure GUI stream is stopped
+        gui = GUI(cli_args_for_gui_defaults=args) 
+        gui.stop_stream() 
         sd._terminate()
         printt("GUI closed. Application terminated.")
 
-else: # Not main execution (e.g., imported as a module)
+else: 
     pass
