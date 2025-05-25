@@ -1,5 +1,6 @@
 import os
 import sys
+import numpy as np
 from dotenv import load_dotenv
 import shutil
 import argparse # Added argparse
@@ -33,7 +34,7 @@ def printt(strr, *args):
 config_class_placeholder = None
 rvc_for_realtime_placeholder = None
 torch_placeholder = None
-numpy_placeholder = None
+numpy_placeholder = np
 librosa_placeholder = None
 torchgate_placeholder = None
 tat_placeholder = None
